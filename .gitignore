@@ -1,0 +1,11 @@
+# IntelliJ IDEA (do not commit)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+*.jks
+*.keystore
+*.apk
+.DS_Store

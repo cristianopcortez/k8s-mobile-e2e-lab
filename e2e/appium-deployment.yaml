@@ -1,0 +1,73 @@
+# Same contract as native-appium-demo/docker-compose.yml (android-appium).
+# Intentionally no KVM nodeAffinity and no /dev/kvm hostPath: Docker Desktop
+# kind on Windows will not schedule (or will crash) if those are required.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appium-emulator
+  namespace: e2e
+  labels:
+    app: appium-emulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appium-emulator
+  template:
+    metadata:
+      labels:
+        app: appium-emulator
+        platform: android
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: appium-with-emulator
+          image: native-appium-demo-android:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: appium
+              containerPort: 4723
+            - name: vnc
+              containerPort: 6080
+          env:
+            - name: EMULATOR_DEVICE
+              value: "Samsung Galaxy S10"
+            - name: WEB_VNC
+              value: "true"
+            - name: APPIUM
+              value: "true"
+            - name: EMULATOR_ARGS
+              value: "-gpu swiftshader_indirect -no-audio -no-boot-anim"
+            - name: CORES
+              value: "2"
+            - name: RAM
+              value: "2048"
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              # 4Gi is easy to hit: emulator RAM env + tmpfs /dev/shm count toward this.
+              memory: 6Gi
+          volumeMounts:
+            - name: apks
+              mountPath: /home/androidusr/apks
+            - name: config
+              mountPath: /home/androidusr/config
+            - name: dshm
+              mountPath: /dev/shm
+          # Do not probe /status until you have seen the emulator home in noVNC.
+          # First boot on software rendering often exceeds 3 minutes.
+      volumes:
+        - name: apks
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            # tmpfs counts against the container memory limit; 2Gi here + 2Gi AVD caused OOMKilled.
+            sizeLimit: 512Mi
