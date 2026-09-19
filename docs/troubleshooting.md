@@ -249,7 +249,14 @@ Browser noVNC is not a terminal: http://localhost:6080 only works while **B** is
 Do this whenever the Pod **name** changes, `RESTARTS` increases, or you applied a new Deployment:
 
 1. Window **A**: wait until a single Pod is `1/1 Running` (no `Terminating` twin).
-2. Window **C** — refresh the name and copy (Windows: relative paths only):
+2. Window **C** — refresh the name and copy. Prefer:
+
+```powershell
+cd C:\workspaces\K8sProjects\k8s-mobile-e2e-lab
+.\scripts\copy-apk-and-keystore-to-pod.bat
+```
+
+Or the same `kubectl cp` steps by hand (Windows: relative paths only):
 
 ```powershell
 $pod = kubectl -n e2e get pod -l app=appium-emulator -o jsonpath="{.items[0].metadata.name}"

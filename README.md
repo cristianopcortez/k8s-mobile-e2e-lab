@@ -2,6 +2,20 @@
 
 Kubernetes lab for Android E2E: Appium + emulator as Deployment/Service, from Docker Compose to Docker Desktop Kubernetes (kind) and later a Linux VM.
 
+## What this is for (GitHub / LinkedIn)
+
+The TestNG process already drives **Selenium** (Chrome) and **Appium** (Android) over HTTP. This repo shows the **cluster shape** of that environment: same ports (`4723`, `6080`), same image, `kubectl apply`, `kubectl cp`, `port-forward`.
+
+| Layer | What actually ran | What to say in a post |
+|---|---|---|
+| Selenium + Appium suite | Green on the **host** via Docker Compose in [`native-appium-demo`](https://github.com/cristianopcortez/native-appium-demo) (Chrome on the machine or Compose profile `web` on `:4444`) | One JVM, two drivers, no machine-specific paths |
+| Kubernetes (this repo) | kind on Docker Desktop: image imported into the node, Pod `Running`, Service, noVNC tunnel | Manifests without fake KVM affinity; Windows limits documented |
+| AVD inside kind | **OOMKilled** (~30–45 min, 4Gi then 6Gi) during / around `mvn test` | Orchestration worked; nested virt + RAM did not — next chapter is Linux + `/dev/kvm` |
+
+Do **not** claim “full E2E green on Kubernetes” until a Linux node with KVM finishes the suite. Claiming Compose + honest kind results is stronger than a screenshot of a Pod that later dies.
+
+Selenium Grid is **not** in `e2e/` yet (Compose `selenium-chrome` only). A follow-up YAML can pin `selenium/standalone-chrome` the same way as Appium.
+
 The TestNG suite lives in [`native-appium-demo`](https://github.com/cristianopcortez/native-appium-demo) (adjust the URL if yours differs). This repo only describes the cluster side.
 
 `app-debug.apk` is **not** built here. It comes from the Taxi Android app: [`cristianopcortez/Taxi`](https://github.com/cristianopcortez/Taxi) (`assembleDebug` / Android Studio **Build APK**). Copy that artifact into `native-appium-demo/apks/` (and later `kubectl cp` into the Pod). Sign it with the same debug keystore you keep in `native-appium-demo/config/` (never commit `*.jks` or `*.apk`). If you do not have `my-debug-keystore.jks` yet, see [docs/troubleshooting.md](docs/troubleshooting.md#how-to-create-my-debug-keystorejks-debug-only).
@@ -66,19 +80,14 @@ Wait until `appium-emulator-*` is `Running`. First emulator boot can take severa
 
 ### 3. Copy APK and keystore into the Pod
 
-`emptyDir` volumes start empty (kind cannot bind-mount your Windows folders).
-
-On Windows do **not** pass `C:\...` to `kubectl cp` (it is parsed as a pod name). `cd` and use a relative path:
+`emptyDir` volumes start empty (kind cannot bind-mount your Windows folders). After every Pod restart / `OOMKilled` / rolling update, copy again.
 
 ```powershell
-$pod = kubectl -n e2e get pod -l app=appium-emulator -o jsonpath="{.items[0].metadata.name}"
-
-cd C:\workspaces\JavaProjects\native-appium-demo\apks
-kubectl -n e2e cp .\app-debug.apk "${pod}:/home/androidusr/apks/app-debug.apk"
-
-cd C:\workspaces\JavaProjects\native-appium-demo\config
-kubectl -n e2e cp .\my-debug-keystore.jks "${pod}:/home/androidusr/config/my-debug-keystore.jks"
+cd C:\workspaces\K8sProjects\k8s-mobile-e2e-lab
+.\scripts\copy-apk-and-keystore-to-pod.bat
 ```
+
+Edit `DEMO` at the top of the `.bat` if `native-appium-demo` is not under `C:\workspaces\JavaProjects\`. The script `cd`s before `kubectl cp` so Windows does not treat `C:` as a pod name. Manual commands: [docs/troubleshooting.md](docs/troubleshooting.md#kubectl-cp-one-of-src-or-dest-must-be-a-local-file-specification).
 
 ### 4. Port-forward and run tests on the host
 
@@ -108,9 +117,11 @@ For Chrome on the host, **do not** set `SELENIUM_REMOTE_URL`. That flag expects 
 
 ```
 e2e/
-  namespace.yaml
+  00-namespace.yaml
   appium-deployment.yaml
   appium-service.yaml
+scripts/
+  copy-apk-and-keystore-to-pod.bat
 ```
 
 Course fundamentals YAMLs belong under `fundamentals/` later — not in the repo root.
