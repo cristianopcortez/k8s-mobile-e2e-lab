@@ -26,14 +26,20 @@ if not exist "%DEMO%\config\my-debug-keystore.jks" (
 )
 
 set POD=
-for /f "usebackq delims=" %%i in (`kubectl -n %NS% get pod -l app=appium-emulator -o jsonpath={.items[0].metadata.name}`) do set "POD=%%i"
-
+set "POD_TMP=%TEMP%\k8s-mobile-e2e-appium-pod.txt"
+del "%POD_TMP%" 2>nul
+kubectl -n %NS% get pods --selector=app=appium-emulator -o jsonpath="{.items[0].metadata.name}" > "%POD_TMP%" 2>&1
+set /p POD=<"%POD_TMP%"
+echo !POD! | findstr /i /b "error:" >nul && set "POD="
 if not defined POD (
   echo [ERROR] No pod with label app=appium-emulator in namespace %NS%.
   echo Run this script on the Docker Desktop host where kubectl sees the cluster.
-  echo Check:  kubectl -n %NS% get pods -l app=appium-emulator
+  type "%POD_TMP%" 2>nul
+  echo Check:  kubectl -n %NS% get pods --selector=app=appium-emulator
+  del "%POD_TMP%" 2>nul
   exit /b 1
 )
+del "%POD_TMP%" 2>nul
 
 echo [INFO] Pod: !POD!
 
