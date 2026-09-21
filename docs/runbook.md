@@ -1,8 +1,10 @@
-# Runbook — after this machine reboots
+# Runbook — after this machine reboots (or you quit Docker Desktop)
 
 Operational checklist to get Appium E2E talking to the kind cluster again. This is not a first-time setup guide.
 
 Pitfalls (OOM, `kubectl cp` on Windows, `docker save` pipe): [troubleshooting.md](troubleshooting.md). First-time Phase 0/1: [README](../README.md).
+
+**Quit Docker Desktop** (or a Windows reboot) stops kind, the Pod, and every `port-forward`. Next session: start at step 1. You do not need `wsl --shutdown` unless you changed `.wslconfig`.
 
 ## What is already on disk (do not redo)
 
@@ -93,7 +95,7 @@ kubectl apply -f e2e/
 kubectl -n e2e get pods -w
 ```
 
-Wait until `appium-emulator-*` is `1/1 Running`. If the Deployment already existed, apply only confirms it; after reboot the Pod is still a new process.
+Wait until `appium-emulator-*` is `1/1 Running`. If the Deployment already existed, apply only confirms it; after reboot or Quit Docker the Pod is still a new process. If you had scaled to `--replicas=0`, this YAML sets `replicas: 1` again.
 
 If you see `ImagePullBackOff`, the image is not on the node — go back to step 2. If namespace errors: [alphabetical apply](troubleshooting.md#kubectl-apply--f-e2e-namespace-created-deploymentservice-namespaces-e2e-not-found).
 
@@ -197,11 +199,21 @@ Window **A** shows `0/1 OOMKilled`, then `RESTARTS 1`. Then:
 
 This lab still hit OOM at **~30–45 min** on the **6Gi** limit during `mvn test`. Do not keep raising YAML limits on Windows kind. Honest result: the cluster **schedules** Appium; the AVD + Espresso rebuild does not stay within a laptop kind node. Next step is a Linux VM with KVM (or Compose on the host, which already passed Phase 0). Details: [Pod OOMKilled](troubleshooting.md#pod-oomkilled-after-many-minutes-running).
 
-To halt the restart loop and free RAM:
+To halt the restart loop and free RAM **without** quitting Docker:
 
 ```powershell
 kubectl -n e2e scale deploy/appium-emulator --replicas=0
 ```
+
+Next session, step 3 (`kubectl apply -f e2e/`) sets `replicas: 1` again.
+
+## End of session
+
+1. Ctrl+C in every **port-forward** window (**B** / **B1** / **B2**) and in the Pod watch (**A**).
+2. Optional: `kubectl -n e2e scale deploy/appium-emulator --replicas=0` if you will keep Docker open.
+3. **Quit Docker Desktop** if you are done for the day. That stops the cluster. You do not need to reboot Windows.
+
+Next time: this runbook from step **1** (Docker green → image still on the node → apply → copy `.bat` → port-forward → noVNC → `run-mvn-test.bat`).
 
 ## Terminal map
 
