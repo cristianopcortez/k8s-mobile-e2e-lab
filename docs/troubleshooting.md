@@ -242,7 +242,28 @@ Use **three** terminals. Closing the wrong one drops the tunnel or hides `OOMKil
 | **B — Port-forward** | `kubectl -n e2e port-forward svc/appium 4723:4723 6080:6080` | Yes, the whole time you use noVNC or `mvn test`. Ctrl+C stops `localhost:4723` / `:6080`. After any Pod **restart or replace**, this process dies or forwards to nothing — start it again in this window. |
 | **C — Copy / tests / logs** | `kubectl cp`, `kubectl exec ls`, `kubectl logs`, `mvn test` | No. Run, finish, reuse. After memory kill or rolling update, run **`cp` again here** before `mvn test`. |
 
-Browser noVNC is not a terminal: http://localhost:6080 only works while **B** is forwarding.
+Browser noVNC is not a terminal: it works only while **B** is forwarding (or **B2** if you use the LAN layout in [runbook step 5](runbook.md#5-port-forward-required-leave-it-running)).
+
+---
+
+### noVNC from another computer on the LAN
+
+**Symptom:** `http://<lan-ip>:6080/` on another laptop does not load, but `kubectl port-forward` is running on the Docker/kubectl host.
+
+**Cause:** The default forward binds **6080** only on `127.0.0.1`. Other machines never reach it. The Service is `ClusterIP`, not a published NodePort on `192.168.x.x`.
+
+**Fix:** On the host that runs `kubectl`, **stop** the combined command if it is still running (`4723:4723 6080:6080`). Do **not** add `--address 0.0.0.0` for `6080` in the same session as that combined command — both forward port **6080** and the second process fails.
+
+Use two windows (full steps in [runbook step 5](runbook.md#5-port-forward-required-leave-it-running)):
+
+| Window | Command | Purpose |
+|---|---|---|
+| **B1** | `kubectl -n e2e port-forward svc/appium 4723:4723` | `mvn test` → `http://localhost:4723` on the kubectl host |
+| **B2** | `kubectl -n e2e port-forward --address 0.0.0.0 svc/appium 6080:6080` | noVNC on `http://<lan-ip>:6080/` from any PC on the LAN |
+
+Remote screen only (no tests yet): **B2** alone is enough. Before `mvn test`, start **B1** as well.
+
+Allow inbound **TCP 6080** on Windows Firewall on the kubectl host. After Pod restart or OOM, restart **every** port-forward window you use (**B**, or **B1** + **B2**), then copy APK/keystore again.
 
 ---
 
@@ -273,13 +294,13 @@ kubectl -n e2e cp .\my-debug-keystore.jks "${pod}:/home/androidusr/config/my-deb
 kubectl -n e2e exec $pod -- ls -lh /home/androidusr/apks /home/androidusr/config
 ```
 
-3. Window **B**: Ctrl+C, then:
+3. Window **B** (or **B1** + **B2** if you use LAN noVNC): Ctrl+C each forward, then start the same layout as [runbook step 5](runbook.md#5-port-forward-required-leave-it-running). Default:
 
 ```powershell
 kubectl -n e2e port-forward svc/appium 4723:4723 6080:6080
 ```
 
-Wait until you see `Forwarding from 127.0.0.1:4723`. Then reload http://localhost:6080.
+Wait until you see `Forwarding from 127.0.0.1:4723`. Then reload http://localhost:6080 (or the LAN URL if you use **B2**).
 
 ---
 

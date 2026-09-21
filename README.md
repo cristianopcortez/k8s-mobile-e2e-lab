@@ -95,7 +95,7 @@ Edit `DEMO` at the top of the `.bat` if `native-appium-demo` is not under `C:\wo
 kubectl -n e2e port-forward svc/appium 4723:4723 6080:6080
 ```
 
-Watch the emulator at http://localhost:6080. When the Android home is visible:
+Watch the emulator at http://localhost:6080. To open noVNC from another PC on your LAN (without running the combined command twice), see [runbook step 5 — optional](docs/runbook.md#optional--novnc-on-another-computer-on-the-lan). When the Android home is visible:
 
 If the Pod is `OOMKilled` or replaced, copy APK/keystore again and restart port-forward. Which terminals to watch and how long to wait: [docs/troubleshooting.md](docs/troubleshooting.md#which-powershell-windows-to-leave-open).
 
@@ -128,3 +128,9 @@ scripts/
 ```
 
 Course fundamentals YAMLs belong under `fundamentals/` later — not in the repo root.
+
+## Author
+
+**Cristiano Cortez** — [cristianocortez@gmail.com](mailto:cristianocortez@gmail.com)
+
+This repository is licensed under the [MIT License](LICENSE).

@@ -110,19 +110,47 @@ Expect `app-debug.apk` (~24M) and `my-debug-keystore.jks`. Edit `DEMO` at the to
 
 ## 5. Port-forward (required, leave it running)
 
+Pick **one** layout below. Do not run the default command and the LAN `6080` forward at the same time — both bind port **6080** and the second process will fail.
+
+### Default — Appium + noVNC on this machine only
+
 **Window B — do not close:**
 
 ```powershell
 kubectl -n e2e port-forward svc/appium 4723:4723 6080:6080
 ```
 
-Wait for `Forwarding from 127.0.0.1:4723`. Ctrl+C in this window drops Appium and noVNC.
+Wait for `Forwarding from 127.0.0.1:4723`. Ctrl+C in this window drops Appium and noVNC. noVNC: http://localhost:6080.
 
-If the Pod restarts, the forward dies: Ctrl+C, start it again, and **repeat step 4**.
+### Optional — noVNC on another computer on the LAN
+
+Use when the host that runs `kubectl` has no browser (or you closed Chrome to save RAM). The default command above listens only on `127.0.0.1`, so **Ctrl+C** it first, then open **two** windows and leave both running:
+
+**Window B1 — Appium for `mvn test` on the kubectl host:**
+
+```powershell
+kubectl -n e2e port-forward svc/appium 4723:4723
+```
+
+Wait for `Forwarding from 127.0.0.1:4723`.
+
+**Window B2 — noVNC reachable on the LAN:**
+
+```powershell
+kubectl -n e2e port-forward --address 0.0.0.0 svc/appium 6080:6080
+```
+
+Wait for `Forwarding from 0.0.0.0:6080 -> 6080`. On the other computer, open `http://<lan-ip-of-kubectl-host>:6080/` (for example `http://192.168.15.162:6080/`). Allow inbound **TCP 6080** on Windows Firewall on the kubectl host. Ctrl+C in **B2** drops the remote screen only; **B1** keeps Appium on `http://localhost:4723`.
+
+If you only need the remote screen and will not run `mvn test` yet, **B2 alone** is enough. Add **B1** before step 7.
+
+More detail: [troubleshooting — noVNC from another computer](troubleshooting.md#novnc-from-another-computer-on-the-lan).
+
+If the Pod restarts, every forward dies: Ctrl+C each port-forward window, start step 5 again (same layout you chose), and **repeat step 4**.
 
 ## 6. Wait for Android home in noVNC
 
-Open http://localhost:6080.
+Open http://localhost:6080, or `http://<lan-ip>:6080/` if you used the optional **B2** layout in step 5.
 
 `1/1 Running` only means the container process is up. The AVD still has to boot (no KVM, `swiftshader`).
 
@@ -171,7 +199,8 @@ kubectl -n e2e scale deploy/appium-emulator --replicas=0
 | Window | Command | Keep open? |
 |---|---|---|
 | **A** | `kubectl -n e2e get pods -w` | Yes, until you are done |
-| **B** | `port-forward svc/appium 4723:4723 6080:6080` | Yes; otherwise `:4723` and `:6080` die |
+| **B** (default) | `port-forward svc/appium 4723:4723 6080:6080` | Yes; otherwise `:4723` and `:6080` die |
+| **B1 + B2** (LAN noVNC) | `4723:4723` in one window; `--address 0.0.0.0` + `6080:6080` in another | Yes; both. Do not also run the default **B** command (6080 conflict). |
 | **C** | `.bat`, `kubectl logs`, `mvn test` | Reuse |
 
-Browser noVNC is not a terminal: http://localhost:6080 only works while **B** is forwarding.
+Browser noVNC is not a terminal: it works only while **B** (or **B2**) is forwarding.
