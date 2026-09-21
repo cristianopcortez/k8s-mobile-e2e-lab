@@ -20,7 +20,7 @@ The TestNG suite lives in [`native-appium-demo`](https://github.com/cristianopco
 
 `app-debug.apk` is **not** built here. It comes from the Taxi Android app: [`cristianopcortez/Taxi`](https://github.com/cristianopcortez/Taxi) (`assembleDebug` / Android Studio **Build APK**). Copy that artifact into `native-appium-demo/apks/` (and later `kubectl cp` into the Pod). Sign it with the same debug keystore you keep in `native-appium-demo/config/` (never commit `*.jks` or `*.apk`). If you do not have `my-debug-keystore.jks` yet, see [docs/troubleshooting.md](docs/troubleshooting.md#how-to-create-my-debug-keystorejks-debug-only).
 
-Windows + kind pitfalls from the first lab session: [docs/troubleshooting.md](docs/troubleshooting.md).
+After this machine reboots, start here: [docs/runbook.md](docs/runbook.md). Windows + kind pitfalls from the first lab session: [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ## Phase 0 (done on the host)
 
@@ -116,6 +116,9 @@ For Chrome on the host, **do not** set `SELENIUM_REMOTE_URL`. That flag expects 
 ## Layout
 
 ```
+docs/
+  runbook.md
+  troubleshooting.md
 e2e/
   00-namespace.yaml
   appium-deployment.yaml

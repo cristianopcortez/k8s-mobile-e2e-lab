@@ -1,6 +1,8 @@
 # Troubleshooting (Windows + Docker Desktop kind)
 
-Runbook from the first lab session: Compose E2E on the host, then Appium inside Docker Desktop Kubernetes (kind, 1 node, `desktop-control-plane`).
+Pitfalls from the first lab session: Compose E2E on the host, then Appium inside Docker Desktop Kubernetes (kind, 1 node, `desktop-control-plane`).
+
+After a reboot, use the ordered checklist in [runbook.md](runbook.md). This file is the “why it broke” companion, not the daily start path.
 
 Paths used in this machine (adjust if yours differ):
 
