@@ -34,6 +34,8 @@ RAM-heavy processes: [troubleshooting.md](troubleshooting.md#close-other-ram-hea
 
 Start **Docker Desktop**. Settings → Kubernetes: **Enable Kubernetes**, provisioner **kind**, **1 node**. Do not pick kubeadm or extra nodes.
 
+Settings → Resources → Advanced may show **no Memory slider** (WSL 2). Caps then live in `%USERPROFILE%\.wslconfig`, not in Docker Desktop. Dedicated-lab example and `wsl --shutdown`: [troubleshooting — WSL 2](troubleshooting.md#docker-desktop-has-no-memory-slider-wsl-2).
+
 Wait until Docker is green and the node is Ready (can take a few minutes):
 
 ```powershell
@@ -165,7 +167,14 @@ Do not start Compose or the IDEs while waiting. Full table: [how long to wait](t
 
 ## 7. Run tests on the host
 
-**Window C** (forward still running in **B**):
+**Window C** (forward still running in **B** or **B1**):
+
+```powershell
+cd C:\workspaces\K8sProjects\k8s-mobile-e2e-lab
+.\scripts\run-mvn-test.bat
+```
+
+Same steps by hand (must run from `native-appium-demo`, not this repo):
 
 ```powershell
 cd C:\workspaces\JavaProjects\native-appium-demo

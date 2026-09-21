@@ -35,7 +35,7 @@ docker compose --profile web down
 
 ## Phase 1 — Docker Desktop Kubernetes (kind, 1 node)
 
-Cluster in this lab: **kind**, **1 node**, Kubernetes **v1.36.1**. Do not enable kubeadm or extra nodes on a laptop that already runs an Android emulator.
+Cluster in this lab: **kind**, **1 node**, Kubernetes **v1.36.1**. Do not enable kubeadm or extra nodes on a laptop that already runs an Android emulator. WSL 2 RAM/CPU for Docker live in `.wslconfig`, not the Desktop slider: [docs/troubleshooting.md](docs/troubleshooting.md#docker-desktop-has-no-memory-slider-wsl-2).
 
 ### 1. Load the local image into the kind *node*
 
@@ -100,9 +100,8 @@ Watch the emulator at http://localhost:6080. To open noVNC from another PC on yo
 If the Pod is `OOMKilled` or replaced, copy APK/keystore again and restart port-forward. Which terminals to watch and how long to wait: [docs/troubleshooting.md](docs/troubleshooting.md#which-powershell-windows-to-leave-open).
 
 ```powershell
-cd C:\workspaces\JavaProjects\native-appium-demo
-$env:APPIUM_SERVER_URL="http://localhost:4723"
-mvn test
+cd C:\workspaces\K8sProjects\k8s-mobile-e2e-lab
+.\scripts\run-mvn-test.bat
 ```
 
 For Chrome on the host, **do not** set `SELENIUM_REMOTE_URL`. That flag expects Selenium on `:4444` (Compose profile `web`), which is not in this cluster yet.
@@ -110,6 +109,7 @@ For Chrome on the host, **do not** set `SELENIUM_REMOTE_URL`. That flag expects 
 ### Honest limits (interview talking point)
 
 - Windows + kind: no reliable KVM; emulator uses `swiftshader_indirect` (slow, may be unusable).
+- Hardware for the kind node in this lab: Ryzen 7 PRO 3700U (4C/8T), **32 GB** RAM, Vega 10 — [details](docs/troubleshooting.md). `OOMKilled` still happened on a **6Gi** Pod limit during `mvn test`; host RAM free ≠ container cgroup headroom.
 - The same YAML without KVM affinity still **schedules**, exposes Appium via a Service, and is the shape you later take to a Linux VM with `/dev/kvm`.
 - A Maven `Job` inside the cluster is the next increment after port-forward + host `mvn test` works.
 
@@ -125,6 +125,7 @@ e2e/
   appium-service.yaml
 scripts/
   copy-apk-and-keystore-to-pod.bat
+  run-mvn-test.bat
 ```
 
 Course fundamentals YAMLs belong under `fundamentals/` later — not in the repo root.

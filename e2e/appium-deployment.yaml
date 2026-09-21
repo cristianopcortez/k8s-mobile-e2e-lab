@@ -39,19 +39,19 @@ spec:
             - name: EMULATOR_ARGS
               value: "-gpu swiftshader_indirect -no-audio -no-boot-anim"
             - name: CORES
-              value: "2"
+              value: "4"
             - name: RAM
               value: "2048"
           securityContext:
             privileged: true
           resources:
             requests:
-              cpu: "500m"
-              memory: 2Gi
-            limits:
               cpu: "2"
+              memory: 3Gi
+            limits:
+              cpu: "4"
               # 4Gi is easy to hit: emulator RAM env + tmpfs /dev/shm count toward this.
-              memory: 6Gi
+              memory: 8Gi
           volumeMounts:
             - name: apks
               mountPath: /home/androidusr/apks

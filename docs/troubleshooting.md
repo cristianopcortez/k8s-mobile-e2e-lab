@@ -12,6 +12,17 @@ Paths used in this machine (adjust if yours differ):
 | TestNG + Compose | `C:\workspaces\JavaProjects\native-appium-demo` |
 | This repo | `C:\workspaces\K8sProjects\k8s-mobile-e2e-lab` |
 
+**Kind / Docker host** (this session; Cursor may run on another PC). Windows 11, Docker Desktop WSL 2, Kubernetes kind 1 node:
+
+| | |
+|---|---|
+| CPU | AMD Ryzen 7 PRO 3700U (4C/8T, 2.30 GHz base) + Radeon Vega Mobile |
+| RAM | 32 GB |
+| GPU | AMD Radeon RX Vega 10 (shared / ~2 GB reported) |
+| Disk | ~447 GB NVMe |
+
+OOM and slow AVD numbers in this file are from **this** box, not a generic cloud node. iGPU + `swiftshader` inside kind still has no `/dev/kvm`.
+
 Do **not** commit `*.jks` or `*.apk`.
 
 ---
@@ -101,6 +112,29 @@ The kind node, a ~4 GiB image tar, `ctr import`, and the Android emulator in the
 - Do **not** retry the PowerShell `docker save | docker exec` pipe; use the file-based import below even after freeing RAM.
 
 You can reopen the IDEs after the image is imported and the Pod is `Running`, if the laptop still has headroom.
+
+---
+
+### Docker Desktop has no Memory slider (WSL 2)
+
+**Symptom:** Settings → Resources → Advanced says resource limits are managed by Windows and points to a `.wslconfig` file. There is no RAM slider.
+
+**Cause:** Docker Desktop on **WSL 2** does not cap the VM from that screen. Limits live in `%USERPROFILE%\.wslconfig` (for example `C:\Users\HP\.wslconfig`). If the file is missing, WSL can grow toward almost all host RAM.
+
+**Dedicated lab PC** (this session: **32 GB** RAM, Pod limit **8Gi**, note used only for terminals / noVNC): a starting file is:
+
+```ini
+[wsl2]
+memory=16GB
+processors=6
+swap=4GB
+```
+
+`memory` must stay **above** the Pod memory limit (8Gi here) plus kind, kubelet, and images. `processors=6` on an 8-logical-CPU laptop leaves two cores for Windows. Adjust both to the machine.
+
+`nestedVirtualization=true` and `kernelCommandLine=svm=on` are optional extras for nested virt in WSL. They do **not** give the Android AVD reliable `/dev/kvm` inside kind on Windows; the emulator still uses `swiftshader`. Do not treat those lines as a fix for `OOMKilled` or a slow launcher.
+
+After saving `.wslconfig`: quit Docker Desktop, run `wsl --shutdown`, start Docker Desktop again, wait until Kubernetes is Ready (`kubectl get nodes`). The Pod often restarts — copy APK/keystore again and restart port-forward. Details: [runbook after OOM](runbook.md#if-the-pod-dies-oomkilled).
 
 ---
 
